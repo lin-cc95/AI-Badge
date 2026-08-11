@@ -1,0 +1,12 @@
+{
+  "name": "ai-badge",
+  "private": true,
+  "packageManager": "pnpm@11.16.0",
+  "scripts": {
+    "build": "pnpm --filter @ai-badge/api build && pnpm --filter @ai-badge/worker build && pnpm --filter @ai-badge/virtual-device build",
+    "test": "pnpm --filter @ai-badge/api test",
+    "lint": "pnpm --filter @ai-badge/api lint",
+    "dev:api": "pnpm --filter @ai-badge/api start:dev",
+    "dev:device": "pnpm --filter @ai-badge/virtual-device dev"
+  }
+}

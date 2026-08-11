@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GenerationStatus {
+  QUEUED
+  GENERATING
+  MODERATING
+  SUCCEEDED
+  FAILED_RETRYABLE
+  FAILED_FINAL
+  CANCELLED
+}
+
+enum TransferStatus {
+  WAITING
+  PREPARING
+  TRANSFERRING
+  VERIFYING
+  LOADING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id           String         @id @default(uuid())
+  username     String         @unique
+  passwordHash String
+  nickname     String
+  createdAt    DateTime       @default(now())
+  characters   Character[]
+  devices      DeviceBinding[]
+  conversations Conversation[]
+}
+
+model Character {
+  id                  String   @id @default(uuid())
+  ownerId             String
+  name                String
+  personaId           String
+  styleId             String
+  color               String
+  currentAssetVersion Int      @default(1)
+  createdAt           DateTime @default(now())
+  owner               User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  assets              Asset[]
+  conversations       Conversation[]
+}
+
+model Asset {
+  id               String   @id @default(uuid())
+  characterId      String
+  type             String
+  objectKey        String
+  hash             String
+  size             Int
+  version          Int
+  moderationStatus String
+  createdAt        DateTime @default(now())
+  character        Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  actionBindings   ActionBinding[]
+  transferTasks    TransferTask[]
+}
+
+model GenerationTask {
+  id        String           @id @default(uuid())
+  ownerId   String
+  status    GenerationStatus @default(QUEUED)
+  progress  Float            @default(0)
+  input     Json
+  results   Json?
+  errorType String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Device {
+  id           String          @id
+  model        String
+  serialNo     String          @unique
+  firmware     String
+  lastSeenAt   DateTime?
+  bindings     DeviceBinding[]
+  actions      ActionBinding[]
+  transfers    TransferTask[]
+}
+
+model DeviceBinding {
+  id        String   @id @default(uuid())
+  deviceId  String
+  ownerId   String
+  boundAt   DateTime @default(now())
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@unique([deviceId, ownerId])
+}
+
+model ActionBinding {
+  id           String   @id @default(uuid())
+  deviceId     String
+  eventType    String
+  assetId      String?
+  text         String?
+  randomPolicy Json?
+  version      Int      @default(1)
+  updatedAt    DateTime @updatedAt
+  device       Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  asset        Asset?   @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  @@unique([deviceId, eventType])
+}
+
+model TransferTask {
+  id         String         @id @default(uuid())
+  deviceId   String
+  assetId    String
+  status     TransferStatus @default(WAITING)
+  chunkIndex Int            @default(0)
+  progress   Float          @default(0)
+  retryCount Int            @default(0)
+  updatedAt  DateTime       @updatedAt
+  device     Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  asset      Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id           String    @id @default(uuid())
+  ownerId      String
+  characterId  String
+  memoryPolicy String    @default("VISIBLE_EDITABLE")
+  lastMessageAt DateTime?
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  character    Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  messages     Message[]
+}
+
+model Message {
+  id               String   @id @default(uuid())
+  conversationId   String
+  role             String
+  content          String
+  emotion          String?
+  moderationStatus String
+  createdAt        DateTime @default(now())
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+

@@ -1,0 +1,261 @@
+openapi: 3.1.0
+info:
+  title: AI Badge API
+  version: 0.1.0
+  description: AI 吧唧 Flutter 客户端与后端之间的唯一接口契约。
+servers:
+  - url: http://localhost:3000/v1
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      security: []
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '201':
+          description: 登录成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthSession' }
+        '401': { $ref: '#/components/responses/ApiError' }
+  /auth/refresh:
+    post:
+      security: []
+      operationId: refreshSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties: { refreshToken: { type: string } }
+      responses:
+        '201':
+          description: 刷新成功
+          content: { application/json: { schema: { $ref: '#/components/schemas/AuthSession' } } }
+  /auth/logout:
+    post:
+      operationId: logout
+      responses: { '201': { description: 已退出 } }
+  /personas:
+    get:
+      operationId: listPersonas
+      responses:
+        '200':
+          description: 官方人格
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Persona' }
+  /characters:
+    get:
+      operationId: listCharacters
+      responses: { '200': { description: 角色列表 } }
+    post:
+      operationId: createCharacter
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CharacterInput' } } }
+      responses: { '201': { description: 已创建角色 } }
+  /characters/{id}/current:
+    post:
+      operationId: setCurrentCharacter
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { '201': { description: 已设置当前角色 } }
+  /generation-tasks:
+    post:
+      operationId: createGenerationTask
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GenerationInput' } } }
+      responses:
+        '201':
+          description: 任务已创建
+          content: { application/json: { schema: { $ref: '#/components/schemas/GenerationTask' } } }
+  /generation-tasks/{id}:
+    get:
+      operationId: getGenerationTask
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200':
+          description: 任务详情
+          content: { application/json: { schema: { $ref: '#/components/schemas/GenerationTask' } } }
+  /generation-tasks/{id}/events:
+    get:
+      operationId: streamGenerationTask
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200':
+          description: SSE 生成状态流
+          content: { text/event-stream: { schema: { type: string } } }
+  /devices:
+    get:
+      operationId: listDevices
+      responses: { '200': { description: 设备列表 } }
+  /devices/bindings:
+    post:
+      operationId: bindDevice
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId, pairingToken]
+              properties:
+                deviceId: { type: string }
+                pairingToken: { type: string }
+      responses: { '201': { description: 绑定成功 }, '409': { $ref: '#/components/responses/ApiError' } }
+  /devices/{id}/action-bindings:
+    get:
+      operationId: listActionBindings
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: 动作映射列表 } }
+  /action-bindings:
+    put:
+      operationId: upsertActionBinding
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ActionBinding' } } }
+      responses: { '200': { description: 已保存动作映射 } }
+  /conversations:
+    post:
+      operationId: createConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [characterId]
+              properties: { characterId: { type: string } }
+      responses: { '201': { description: 会话已创建 } }
+  /conversations/{id}/messages/stream:
+    post:
+      operationId: streamChatMessage
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties: { content: { type: string, maxLength: 2000 } }
+      responses:
+        '200':
+          description: SSE 对话增量和最终情绪
+          content: { text/event-stream: { schema: { type: string } } }
+  /firmware:
+    get:
+      operationId: getFirmwarePolicy
+      responses: { '200': { description: 固件策略 } }
+  /diagnostics:
+    post:
+      operationId: uploadDiagnostic
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object } } }
+      responses: { '201': { description: 诊断包已接收 } }
+  /health:
+    get:
+      security: []
+      operationId: health
+      responses: { '200': { description: 服务正常 } }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ApiError:
+      description: 标准错误
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, example: demo }
+        password: { type: string, format: password, example: Badge123! }
+    AuthSession:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user: { type: object, additionalProperties: true }
+    Persona:
+      type: object
+      required: [id, name, tags, sample]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        tags: { type: array, items: { type: string } }
+        sample: { type: string }
+    CharacterInput:
+      type: object
+      required: [name, personaId, styleId]
+      properties:
+        name: { type: string }
+        personaId: { type: string }
+        styleId: { type: string }
+        color: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }
+    GenerationInput:
+      type: object
+      required: [styleId, personaId, tags]
+      properties:
+        styleId: { type: string }
+        personaId: { type: string }
+        tags: { type: array, items: { type: string } }
+        prompt: { type: string, maxLength: 500 }
+        referenceAssetId: { type: string }
+    GenerationTask:
+      type: object
+      required: [id, status, progress, results]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [QUEUED, GENERATING, MODERATING, SUCCEEDED, FAILED_RETRYABLE, FAILED_FINAL, CANCELLED] }
+        progress: { type: number, minimum: 0, maximum: 1 }
+        results: { type: array, items: { type: object, additionalProperties: true } }
+        errorType: { type: [string, 'null'] }
+    ActionBinding:
+      type: object
+      required: [deviceId, eventType, feedbackType]
+      properties:
+        deviceId: { type: string }
+        eventType: { type: string, enum: [tap, doubleTap, longPress, shake, lift] }
+        feedbackType: { type: string }
+        text: { type: string }
+        assetId: { type: string }
+    ApiError:
+      type: object
+      required: [code, message, retryable, requestId]
+      properties:
+        code: { type: string, example: BLE-104 }
+        message: { type: string }
+        retryable: { type: boolean }
+        requestId: { type: string }
+        details: { type: object, additionalProperties: true }
+
