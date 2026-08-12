@@ -1,17 +1,28 @@
-FROM node:24.14.0-alpine AS build
+FROM node:24.14.0-alpine AS workspace
 RUN corepack enable
-WORKDIR /app
-COPY package.json ./
-RUN pnpm install --frozen-lockfile=false
-COPY tsconfig*.json nest-cli.json ./
-COPY src ./src
-RUN pnpm build
+WORKDIR /workspace
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/worker/package.json apps/worker/package.json
+COPY tools/virtual-device/package.json tools/virtual-device/package.json
 
-FROM node:24.14.0-alpine
+FROM workspace AS build
+RUN pnpm install --frozen-lockfile
+COPY apps/api/tsconfig.json apps/api/tsconfig.build.json apps/api/nest-cli.json apps/api/
+COPY apps/api/src apps/api/src
+RUN pnpm --filter @ai-badge/api build
+
+FROM workspace AS production-dependencies
+RUN pnpm --filter @ai-badge/api install --prod --frozen-lockfile
+
+FROM node:24.14.0-alpine AS runtime
 ENV NODE_ENV=production
-WORKDIR /app
-COPY package.json ./
-RUN corepack enable && pnpm install --prod --frozen-lockfile=false
-COPY --from=build /app/dist ./dist
+WORKDIR /workspace
+COPY --from=production-dependencies /workspace/node_modules ./node_modules
+COPY --from=production-dependencies /workspace/apps/api/node_modules ./apps/api/node_modules
+COPY --from=production-dependencies /workspace/apps/api/package.json ./apps/api/package.json
+COPY --from=build /workspace/apps/api/dist ./apps/api/dist
+RUN chown -R node:node /workspace
+USER node
+WORKDIR /workspace/apps/api
 CMD ["node", "dist/main.js"]
-

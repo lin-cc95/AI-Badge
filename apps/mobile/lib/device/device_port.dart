@@ -80,8 +80,9 @@ class VirtualDeviceAdapter implements DevicePort {
 
   @override
   Future<void> syncCharacter(BadgeCharacter character) async {
-    if (_current.status != DeviceStatus.connected)
+    if (_current.status != DeviceStatus.connected) {
       throw StateError('DEVICE_NOT_CONNECTED');
+    }
     for (var i = 0; i <= 10; i++) {
       _emit(
         _current.copyWith(status: DeviceStatus.transferring, progress: i / 10),
@@ -93,8 +94,9 @@ class VirtualDeviceAdapter implements DevicePort {
 
   @override
   Future<void> testAction(String eventType) async {
-    if (_current.status != DeviceStatus.connected)
+    if (_current.status != DeviceStatus.connected) {
       throw StateError('DEVICE_NOT_CONNECTED');
+    }
     await Future<void>.delayed(const Duration(milliseconds: 280));
   }
 

@@ -13,14 +13,15 @@ import { GenerationModule } from './generation/generation.module';
 import { HealthModule } from './health/health.module';
 import { OperationsModule } from './operations/operations.module';
 import { PersonasModule } from './personas/personas.module';
+import { validateEnvironment } from './config/environment';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({ secret: config.get('JWT_SECRET', 'local-development-secret-change-before-deploy') }),
+      useFactory: (config: ConfigService) => ({ secret: config.getOrThrow<string>('JWT_SECRET') }),
     }),
     AuthModule,
     PersonasModule,

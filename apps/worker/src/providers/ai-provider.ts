@@ -33,6 +33,7 @@ export class ConfigurableRestProvider implements ChatProvider, ImageGenerationPr
     private readonly baseUrl: string,
     private readonly apiKey: string,
     private readonly imageModel: string,
+    private readonly moderationModel: string,
     private readonly chatModel = process.env.CHAT_MODEL ?? '',
   ) {}
 
@@ -57,8 +58,49 @@ export class ConfigurableRestProvider implements ChatProvider, ImageGenerationPr
     });
     if (!response.ok) throw new Error(`AI_PROVIDER_${response.status}`);
     const data = await response.json() as { data?: Array<{ url?: string; b64_json?: string }> };
-    return (data.data ?? []).map((item, index) => ({ id: `provider-${index}`, name: `候选 ${index + 1}`, color: ['#F5A6D9', '#78E7C7', '#89DDF0'][index] ?? '#89DDF0', assetKey: item.url ?? `inline:${Boolean(item.b64_json)}` }));
+    return (data.data ?? []).map((item, index) => {
+      if (!item.url) throw new Error('AI_PROVIDER_IMAGE_URL_REQUIRED_FOR_MODERATION');
+      return {
+        id: `provider-${index}`,
+        name: `候选 ${index + 1}`,
+        color: ['#F5A6D9', '#78E7C7', '#89DDF0'][index] ?? '#89DDF0',
+        assetKey: item.url,
+      };
+    });
   }
 
-  async check(_input: { text?: string; assetKeys?: string[] }): Promise<{ allowed: boolean; reason?: string }> { return { allowed: true }; }
+  async check(input: { text?: string; assetKeys?: string[] }): Promise<{ allowed: boolean; reason?: string }> {
+    if (!this.baseUrl || !this.apiKey || !this.moderationModel) {
+      throw new Error('AI_MODERATION_NOT_CONFIGURED');
+    }
+
+    const moderationInput: Array<Record<string, unknown>> = [];
+    if (input.text?.trim()) moderationInput.push({ type: 'text', text: input.text.trim() });
+    for (const assetKey of input.assetKeys ?? []) {
+      if (!/^https:\/\//i.test(assetKey)) {
+        return { allowed: false, reason: 'UNSUPPORTED_ASSET_FOR_MODERATION' };
+      }
+      moderationInput.push({ type: 'image_url', image_url: { url: assetKey } });
+    }
+    if (moderationInput.length === 0) return { allowed: false, reason: 'EMPTY_MODERATION_INPUT' };
+
+    const response = await fetch(`${this.baseUrl}/moderations`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${this.apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: this.moderationModel, input: moderationInput }),
+    });
+    if (!response.ok) throw new Error(`AI_MODERATION_PROVIDER_${response.status}`);
+    const data = await response.json() as {
+      results?: Array<{ flagged?: boolean; categories?: Record<string, boolean> }>;
+    };
+    const result = data.results?.[0];
+    if (typeof result?.flagged !== 'boolean') throw new Error('AI_MODERATION_INVALID_RESPONSE');
+    const categories = Object.entries(result.categories ?? {})
+      .filter(([, flagged]) => flagged)
+      .map(([category]) => category);
+    return {
+      allowed: !result.flagged,
+      reason: result.flagged ? categories.join(',') || 'FLAGGED_BY_PROVIDER' : undefined,
+    };
+  }
 }

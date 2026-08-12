@@ -2,6 +2,8 @@
   "name": "@ai-badge/worker",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.16.0",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
@@ -17,4 +19,3 @@
     "typescript": "^5.8.3"
   }
 }
-

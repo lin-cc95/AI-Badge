@@ -7,7 +7,7 @@ export class LoginDto {
   @IsNotEmpty()
   username: string;
 
-  @ApiProperty({ example: 'Badge123!' })
+  @ApiProperty({ example: 'your-configured-test-password' })
   @IsString()
   @IsNotEmpty()
   password: string;
@@ -18,4 +18,3 @@ export class RefreshDto {
   @IsNotEmpty()
   refreshToken: string;
 }
-

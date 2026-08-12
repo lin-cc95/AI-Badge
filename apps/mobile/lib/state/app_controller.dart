@@ -122,8 +122,9 @@ class AppController extends StateNotifier<AppState> {
         );
         if (status == 'SUCCEEDED' ||
             status.startsWith('FAILED') ||
-            status == 'CANCELLED')
+            status == 'CANCELLED') {
           return;
+        }
       }
       state = state.copyWith(
         generationStatus: GenerationStatus.failedRetryable,

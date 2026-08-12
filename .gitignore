@@ -5,10 +5,14 @@
 build/
 coverage/
 node_modules/
+.pnpm-store/
 dist/
 .env
+.env.*
+!.env.example
 *.log
 apps/api/prisma/dev.db
 apps/mobile/ios/Pods/
 apps/mobile/android/.gradle/
-
+.idea/
+*.iml

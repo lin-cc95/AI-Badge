@@ -198,7 +198,7 @@ components:
       required: [username, password]
       properties:
         username: { type: string, example: demo }
-        password: { type: string, format: password, example: Badge123! }
+        password: { type: string, format: password, example: your-configured-test-password }
     AuthSession:
       type: object
       required: [accessToken, refreshToken, user]
@@ -258,4 +258,3 @@ components:
         retryable: { type: boolean }
         requestId: { type: string }
         details: { type: object, additionalProperties: true }
-

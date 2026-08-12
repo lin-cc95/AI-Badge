@@ -17,7 +17,7 @@ describe('AI Badge API vertical slice', () => {
     await app.init();
   });
 
-  afterAll(async () => app.close());
+  afterAll(async () => app?.close());
 
   it('rejects protected resources with the standard error envelope', async () => {
     const response = await request(app.getHttpServer()).get('/v1/devices').expect(401);
@@ -28,7 +28,7 @@ describe('AI Badge API vertical slice', () => {
   it('logs in and completes an asynchronous generation task', async () => {
     const auth = await request(app.getHttpServer())
       .post('/v1/auth/login')
-      .send({ username: 'demo', password: 'Badge123!' })
+      .send({ username: 'demo', password: 'Badge123!test' })
       .expect(201);
     const created = await request(app.getHttpServer())
       .post('/v1/generation-tasks')

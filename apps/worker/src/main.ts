@@ -6,7 +6,12 @@ import { ConfigurableRestProvider, DeterministicMockProvider, ImageGenerationPro
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 const mock = new DeterministicMockProvider();
-const rest = new ConfigurableRestProvider(process.env.AI_BASE_URL ?? '', process.env.AI_API_KEY ?? '', process.env.IMAGE_MODEL ?? '');
+const rest = new ConfigurableRestProvider(
+  process.env.AI_BASE_URL ?? '',
+  process.env.AI_API_KEY ?? '',
+  process.env.IMAGE_MODEL ?? '',
+  process.env.MODERATION_MODEL ?? '',
+);
 
 const generationWorker = new Worker('generation', async (job) => {
   const provider: ImageGenerationProvider & ModerationProvider = process.env.AI_PROVIDER === 'rest' ? rest : mock;

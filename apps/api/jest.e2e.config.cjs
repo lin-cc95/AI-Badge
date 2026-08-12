@@ -3,5 +3,6 @@ module.exports = {
   rootDir: 'src',
   testRegex: '.*\\.e2e\\.spec\\.ts$',
   transform: { '^.+\\.(t|j)s$': 'ts-jest' },
-  testEnvironment: 'node'
+  testEnvironment: 'node',
+  setupFiles: ['<rootDir>/../test/setup-environment.cjs']
 };

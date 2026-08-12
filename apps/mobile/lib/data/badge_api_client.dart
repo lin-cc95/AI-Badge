@@ -36,8 +36,9 @@ class BadgeApiClient {
   bool get enabled => _dio.options.baseUrl.isNotEmpty;
 
   static String _normalizedBaseUrl() {
-    if (configuredApiBaseUrl.isEmpty || configuredApiBaseUrl.endsWith('/'))
+    if (configuredApiBaseUrl.isEmpty || configuredApiBaseUrl.endsWith('/')) {
       return configuredApiBaseUrl;
+    }
     return '$configuredApiBaseUrl/';
   }
 
