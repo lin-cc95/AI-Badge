@@ -78,4 +78,4 @@ cd apps/mobile && flutter analyze && flutter test
 ```
 
 当前 iOS 模拟器流程已在 Flutter 3.44.9、Xcode 26.6 和 iOS 26.5 Simulator 上验证通过。
-# AI-Badge
+
