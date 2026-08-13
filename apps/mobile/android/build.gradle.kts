@@ -19,6 +19,19 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// reactive_ble_mobile 5.5.0 still declares compileSdk 33, while its AndroidX
+// dependencies require API 34 or newer. Keep this compatibility override local
+// to that plugin until the upstream package updates its Android configuration.
+subprojects {
+    afterEvaluate {
+        if (name == "reactive_ble_mobile") {
+            extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+                compileSdk = 36
+            }
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
