@@ -13,3 +13,4 @@ allowBuilds:
   argon2: true
   msgpackr-extract: true
   prisma: true
+  unrs-resolver: true
