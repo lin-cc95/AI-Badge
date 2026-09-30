@@ -1,4 +1,4 @@
-FROM node:24.14.0-alpine AS workspace
+FROM node:26.10.0-alpine AS workspace
 RUN corepack enable
 WORKDIR /workspace
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -15,7 +15,7 @@ RUN pnpm --filter @ai-badge/worker build
 FROM workspace AS production-dependencies
 RUN pnpm --filter @ai-badge/worker install --prod --frozen-lockfile
 
-FROM node:24.14.0-alpine AS runtime
+FROM node:26.10.0-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /workspace
 COPY --from=production-dependencies /workspace/node_modules ./node_modules
