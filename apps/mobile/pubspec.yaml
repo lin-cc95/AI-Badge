@@ -17,7 +17,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.30
   path_provider: ^2.1.5
   path: ^1.9.1
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^11.0.0
   flutter_reactive_ble: ^5.4.2
 
 dev_dependencies:
